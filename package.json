@@ -1,0 +1,38 @@
+{
+  "name": "hn-mcp",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "hn-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "hacker-news",
+    "hn",
+    "news",
+    "claude"
+  ],
+  "author": "devabdultech",
+  "license": "MIT",
+  "description": "MCP Server for using the Hacker News API",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "@types/node": "^22.13.7",
+    "@types/node-fetch": "^2.6.12",
+    "node-fetch": "^3.3.2",
+    "zod": "^3.24.2",
+    "zod-to-json-schema": "^3.24.3"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  }
+}
