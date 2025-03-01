@@ -1,0 +1,31 @@
+# Source files
+src/
+
+# TypeScript config
+tsconfig.json
+
+# Development files
+.git/
+.gitignore
+.env
+.env.*
+
+# IDE files
+.vscode/
+.idea/
+
+# Build artifacts
+*.log
+npm-debug.log*
+
+# Test files
+__tests__/
+*.test.ts
+*.spec.ts
+
+# Documentation
+docs/
+
+# Docker
+Dockerfile
+.dockerignore
