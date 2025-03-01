@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -19,7 +20,7 @@ import { SearchParamsSchema } from "./schemas/search.js";
 const server = new Server(
   {
     name: "hacker-news-mcp",
-    version: "1.0.0",
+    version: "1.1.1",
   },
   {
     capabilities: {
@@ -338,7 +339,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function runServer() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("GitHub MCP Server running on stdio");
+  console.error("Hacker News MCP Server running on stdio");
 }
 
 runServer().catch((error) => {
