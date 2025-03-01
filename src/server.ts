@@ -11,6 +11,8 @@ import { algoliaApi } from "./api/algolia.js";
 import { formatStory } from "./models/story.js";
 import { formatComment } from "./models/comment.js";
 import { formatUser } from "./models/user.js";
+import { validateInput } from "./utils/validation.js";
+import { SearchParamsSchema } from "./schemas/search.js";
 
 export async function startServer() {
   // Create the MCP server
@@ -170,12 +172,8 @@ export async function startServer() {
 
     switch (name) {
       case "search": {
-        const { query, type, page, hitsPerPage } = args as {
-          query: string;
-          type?: "all" | "story" | "comment";
-          page?: number;
-          hitsPerPage?: number;
-        };
+        const validatedArgs = validateInput(SearchParamsSchema, args);
+        const { query, type, page, hitsPerPage } = validatedArgs;
         const tags = type === "all" ? undefined : type;
         const results = await algoliaApi.search(query, {
           tags,
