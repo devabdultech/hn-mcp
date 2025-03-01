@@ -336,7 +336,6 @@ export async function startServer() {
 
   // Connect to the transport
   const transport = new StdioServerTransport();
-  await server.connect(transport);
 
-  console.log("Hacker News MCP server started");
+  await server.connect(transport);
 }
