@@ -19,7 +19,7 @@ import { SearchParamsSchema } from "./schemas/search.js";
 // Create the MCP server
 const server = new Server(
   {
-    name: "hacker-news-mcp",
+    name: "hackernews-mcp-server",
     version: "1.1.3",
   },
   {
