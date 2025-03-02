@@ -20,7 +20,7 @@ import { SearchParamsSchema } from "./schemas/search.js";
 const server = new Server(
   {
     name: "hackernews-mcp-server",
-    version: "1.1.3",
+    version: "1.1.4",
   },
   {
     capabilities: {
@@ -284,9 +284,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { storyId } = args as { storyId: number };
 
       // Use Algolia API to get the full comment tree in one request
-      const result = await fetch(
-        `https://hn.algolia.com/api/v1/items/${storyId}`
-      );
+      const result = await algoliaApi.getStoryWithComments(storyId);
       const data = await result.json();
 
       if (!data || !data.children) {
@@ -328,10 +326,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     default:
-      throw new McpError(
-        ErrorCode.MethodNotFound,
-        `Tool '${name}' not found`
-      );
+      throw new McpError(ErrorCode.MethodNotFound, `Tool '${name}' not found`);
   }
 });
 
