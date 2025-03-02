@@ -20,7 +20,7 @@ import { SearchParamsSchema } from "./schemas/search.js";
 const server = new Server(
   {
     name: "hacker-news-mcp",
-    version: "1.1.1",
+    version: "1.1.3",
   },
   {
     capabilities: {
