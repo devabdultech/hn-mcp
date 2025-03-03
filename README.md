@@ -11,52 +11,7 @@ Official Hacker News MCP Server - Adds powerful Hacker News integration to Curso
 - Get user profiles and submissions
 - Real-time access to Hacker News data
 
-## Installation
-
-### Running with npx
-
-The quickest way to get started:
-
-```bash
-npx @devabdultech/hn-mcp-server
-```
-
-### Manual Installation
-
-```bash
-npm install -g @devabdultech/hn-mcp-server
-hn-mcp-server
-```
-
-### Running on Cursor
-
-Add this to your `~/.cursor/config.json`:
-
-```json
-{
-  "mcpServers": {
-    "hackernews": {
-      "command": "npx",
-      "args": ["-y", "@devabdultech/hn-mcp-server"]
-    }
-  }
-}
-```
-
-### Running on Windsurf
-
-Add this to your `~/.windsurf/config.json`:
-
-```json
-{
-  "mcpServers": {
-    "hackernews": {
-      "command": "npx",
-      "args": ["-y", "@devabdultech/hn-mcp-server"]
-    }
-  }
-}
-```
+## Set Up
 
 ### Running on Claude Desktop
 
@@ -73,87 +28,48 @@ Add this to your `claude_desktop_config.json`:
 }
 ```
 
-## Available Tools
+## Tools
 
-### 1. Search Tool (search)
-Search for stories and comments on Hacker News using Algolia's search API.
-```json
-{
-  "name": "search",
-  "arguments": {
-    "query": "artificial intelligence",
-    "type": "story",
-    "page": 0,
-    "hitsPerPage": 20
-  }
-}
-```
+1. `search`
+   * Search for stories and comments on Hacker News using Algolia's search API
+   * Inputs:
+         * `query` (string): Search query
+         * `type` (optional string): Filter by type ('story' or 'comment')
+         * `page` (optional number): Page number for pagination
+         * `hitsPerPage` (optional number): Results per page (max 100)
+   * Returns: Search results with stories and comments
 
-### 2. Get Stories Tool (getStories)
-Get multiple stories by type (top, new, best, ask, show, job).
-```json
-{
-  "name": "getStories",
-  "arguments": {
-    "type": "top",
-    "limit": 30
-  }
-}
-```
+2. `getStories`
+   * Get multiple stories by type (top, new, best, ask, show, job)
+   * Inputs:
+         * `type` (string): Type of stories to fetch ('top', 'new', 'best', 'ask', 'show', 'job')
+         * `limit` (optional number): Number of stories to fetch (max 100)
+   * Returns: Array of story objects
 
-### 3. Get Story with Comments (getStoryWithComments)
-Get a story along with its comment thread.
-```json
-{
-  "name": "getStoryWithComments",
-  "arguments": {
-    "id": 123456
-  }
-}
-```
+3. `getStoryWithComments`
+   * Get a story along with its comment thread
+   * Inputs:
+         * `id` (number): Story ID
+   * Returns: Story details with nested comments
 
-### 4. Get Comment Tree (getCommentTree)
-Get the full comment tree for a story.
-```json
-{
-  "name": "getCommentTree",
-  "arguments": {
-    "storyId": 123456
-  }
-}
-```
+4. `getCommentTree`
+   * Get the full comment tree for a story
+   * Inputs:
+         * `storyId` (number): ID of the story
+   * Returns: Hierarchical comment tree structure
 
-### 5. Get User Profile (getUser)
-Get a user's profile information.
-```json
-{
-  "name": "getUser",
-  "arguments": {
-    "id": "username"
-  }
-}
-```
+5. `getUser`
+   * Get a user's profile information
+   * Inputs:
+         * `id` (string): Username
+   * Returns: User profile details including karma, created date, and about text
 
-### 6. Get User Submissions (getUserSubmissions)
-Get a user's submissions (stories and comments).
-```json
-{
-  "name": "getUserSubmissions",
-  "arguments": {
-    "id": "username"
-  }
-}
-```
+6. `getUserSubmissions`
+   * Get a user's submissions (stories and comments)
+   * Inputs:
+         * `id` (string): Username
+   * Returns: Array of user's submitted stories and comments
 
-## Error Handling
-
-The server implements standard MCP error codes and provides detailed error messages for:
-- Invalid parameters
-- Resource not found
-- API rate limiting
-- Network errors
-
-## Development
 
 ### Contributing
 
@@ -165,7 +81,7 @@ The server implements standard MCP error codes and provides detailed error messa
 
 ## License
 
-MIT
+This MCP server is licensed under the MIT License. See the LICENSE file for details.
 
 ## About
 

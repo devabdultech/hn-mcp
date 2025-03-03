@@ -1,10 +1,17 @@
 {
   "name": "@devabdultech/hn-mcp-server",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "main": "./dist/index.js",
   "type": "module",
   "bin": {
     "hackernews-mcp": "./dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devabdultech/hn-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/devabdultech/hn-mcp/issues"
   },
   "files": [
     "dist",
