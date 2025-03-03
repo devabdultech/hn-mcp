@@ -1,5 +1,4 @@
 import fetch from "node-fetch";
-import { searchCache } from "../utils/cache.js";
 
 const API_BASE_URL = "https://hn.algolia.com/api/v1";
 
@@ -20,11 +19,8 @@ export class AlgoliaAPI {
     } = {}
   ): Promise<any> {
     const params = new URLSearchParams();
-
-    // Add query parameter
     params.append("query", query);
 
-    // Add optional parameters
     if (options.tags) params.append("tags", options.tags);
     if (options.numericFilters)
       params.append("numericFilters", options.numericFilters);
@@ -34,19 +30,8 @@ export class AlgoliaAPI {
       params.append("hitsPerPage", options.hitsPerPage.toString());
 
     const url = `${API_BASE_URL}/search?${params.toString()}`;
-
-    // Check cache first
-    const cacheKey = `search-${url}`;
-    const cached = searchCache.get(cacheKey);
-    if (cached) return cached;
-
     const response = await fetch(url);
-    const data = await response.json();
-
-    // Cache the results
-    searchCache.set(cacheKey, data);
-
-    return data;
+    return response.json();
   }
 
   /**
@@ -69,30 +54,16 @@ export class AlgoliaAPI {
    * Get a story with its comments
    */
   async getStoryWithComments(storyId: number): Promise<any> {
-    const cacheKey = `story-comments-${storyId}`;
-    const cached = searchCache.get(cacheKey);
-    if (cached) return cached;
-
     const response = await fetch(`${API_BASE_URL}/items/${storyId}`);
-    const data = await response.json();
-
-    searchCache.set(cacheKey, data);
-    return data;
+    return response.json();
   }
 
   /**
    * Get a user profile
    */
   async getUser(username: string): Promise<any> {
-    const cacheKey = `algolia-user-${username}`;
-    const cached = searchCache.get(cacheKey);
-    if (cached) return cached;
-
     const response = await fetch(`${API_BASE_URL}/users/${username}`);
-    const data = await response.json();
-
-    searchCache.set(cacheKey, data);
-    return data;
+    return response.json();
   }
 }
 

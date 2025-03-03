@@ -1,5 +1,4 @@
 import fetch from "node-fetch";
-import { storyCache } from "../utils/cache.js";
 
 const API_BASE_URL = "https://hacker-news.firebaseio.com/v0";
 
@@ -11,14 +10,8 @@ export class HackerNewsAPI {
    * Fetch an item by ID
    */
   async getItem(id: number): Promise<any> {
-    const cacheKey = `item-${id}`;
-    const cached = storyCache.get(cacheKey);
-    if (cached) return cached;
-
     const response = await fetch(`${API_BASE_URL}/item/${id}.json`);
-    const data = await response.json();
-    storyCache.set(cacheKey, data);
-    return data;
+    return response.json();
   }
 
   /**
