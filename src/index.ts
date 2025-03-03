@@ -14,19 +14,19 @@ import { formatStory } from "./models/story.js";
 import { formatComment } from "./models/comment.js";
 import { formatUser } from "./models/user.js";
 import { validateInput } from "./utils/validation.js";
-import { SearchParamsSchema } from "./schemas/search.js";
 import {
+  SearchParamsSchema,
   CommentRequestSchema,
   CommentsRequestSchema,
   CommentTreeRequestSchema,
   UserRequestSchema,
-} from "./schemas/request.js";
+} from "./schemas/index.js";
 
 // Create the MCP server
 const server = new Server(
   {
     name: "hackernews-mcp-server",
-    version: "1.1.10",
+    version: "1.2.1",
   },
   {
     capabilities: {
@@ -188,16 +188,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         hitsPerPage,
       });
 
-      // Format the results to match the expected schema
+      const hits = results.hits || [];
+      const text = hits
+        .map(
+          (hit: any, index: number) =>
+            `${index + 1}. ${hit.title}\n` +
+            `   ID: ${hit.objectID}\n` +
+            `   URL: ${hit.url || "(text post)"}\n` +
+            `   Points: ${hit.points} | Author: ${hit.author} | Comments: ${hit.num_comments}\n\n`
+        )
+        .join("");
+
       return {
-        result: {
-          hits: results.hits || [],
-          page: results.page || 0,
-          nbHits: results.nbHits || 0,
-          nbPages: results.nbPages || 0,
-          hitsPerPage: results.hitsPerPage || 20,
-          processingTimeMS: results.processingTimeMS || 0,
-        },
+        content: [{ type: "text", text: text.trim() }],
       };
     }
 
@@ -210,19 +213,64 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           `Story with ID ${id} not found`
         );
       }
-      return { result: formatStory(item) };
+      const story = formatStory(item);
+      const text =
+        `Story ID: ${story.id}\n` +
+        `Title: ${story.title}\n` +
+        `URL: ${story.url || "(text post)"}\n` +
+        `Points: ${story.score} | Author: ${story.by} | Comments: ${story.descendants}\n` +
+        (story.text ? `\nContent:\n${story.text}\n` : "");
+
+      return {
+        content: [{ type: "text", text: text.trim() }],
+      };
     }
 
     case "getStoryWithComments": {
       const { id } = args as { id: number };
-      const result = await algoliaApi.getStoryWithComments(id);
-      if (!result) {
+      try {
+        const data = await algoliaApi.getStoryWithComments(id);
+        if (!data || !data.title) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            `Story with ID ${id} not found`
+          );
+        }
+
+        const formatCommentTree = (comment: any, depth = 0): string => {
+          const indent = "  ".repeat(depth);
+          let text = `${indent}Comment by ${comment.author} (ID: ${comment.id}):\n`;
+          text += `${indent}${comment.text}\n`;
+          text += `${indent}Posted: ${comment.created_at}\n\n`;
+
+          if (comment.children) {
+            text += comment.children
+              .map((child: any) => formatCommentTree(child, depth + 1))
+              .join("");
+          }
+          return text;
+        };
+
+        const text =
+          `Story ID: ${data.id}\n` +
+          `Title: ${data.title}\n` +
+          `URL: ${data.url || "(text post)"}\n` +
+          `Points: ${data.points} | Author: ${data.author}\n\n` +
+          `Comments:\n` +
+          (data.children || [])
+            .map((comment: any) => formatCommentTree(comment))
+            .join("");
+
+        return {
+          content: [{ type: "text", text: text.trim() }],
+        };
+      } catch (err) {
+        const error = err as Error;
         throw new McpError(
-          ErrorCode.InvalidParams,
-          `Story with ID ${id} not found`
+          ErrorCode.InternalError,
+          `Failed to fetch story: ${error.message}`
         );
       }
-      return { result };
     }
 
     case "getStories": {
@@ -230,35 +278,61 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         type: "top" | "new" | "best" | "ask" | "show" | "job";
         limit?: number;
       };
-      let storyIds: number[] = [];
+      try {
+        let storyIds: number[] = [];
 
-      switch (type) {
-        case "top":
-          storyIds = await hnApi.getTopStories(limit);
-          break;
-        case "new":
-          storyIds = await hnApi.getNewStories(limit);
-          break;
-        case "best":
-          storyIds = await hnApi.getBestStories(limit);
-          break;
-        case "ask":
-          storyIds = await hnApi.getAskStories(limit);
-          break;
-        case "show":
-          storyIds = await hnApi.getShowStories(limit);
-          break;
-        case "job":
-          storyIds = await hnApi.getJobStories(limit);
-          break;
-      }
+        switch (type) {
+          case "top":
+            storyIds = await hnApi.getTopStories(limit);
+            break;
+          case "new":
+            storyIds = await hnApi.getNewStories(limit);
+            break;
+          case "best":
+            storyIds = await hnApi.getBestStories(limit);
+            break;
+          case "ask":
+            storyIds = await hnApi.getAskStories(limit);
+            break;
+          case "show":
+            storyIds = await hnApi.getShowStories(limit);
+            break;
+          case "job":
+            storyIds = await hnApi.getJobStories(limit);
+            break;
+        }
 
-      const items = await hnApi.getItems(storyIds);
-      return {
-        result: items
+        const items = await hnApi.getItems(storyIds);
+        const stories = items
           .filter((item) => item && item.type === "story")
-          .map(formatStory),
-      };
+          .map(formatStory);
+
+        if (stories.length === 0) {
+          return {
+            content: [{ type: "text", text: "No stories found." }],
+          };
+        }
+
+        const text = stories
+          .map(
+            (story, index) =>
+              `${index + 1}. ${story.title}\n` +
+              `   ID: ${story.id}\n` +
+              `   URL: ${story.url || "(text post)"}\n` +
+              `   Points: ${story.score} | Author: ${story.by} | Comments: ${story.descendants}\n\n`
+          )
+          .join("");
+
+        return {
+          content: [{ type: "text", text: text.trim() }],
+        };
+      } catch (err) {
+        const error = err as Error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Failed to fetch stories: ${error.message}`
+        );
+      }
     }
 
     case "getComment": {
@@ -271,48 +345,127 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           `Comment with ID ${id} not found`
         );
       }
-      return { result: formatComment(item) };
+      const comment = formatComment(item);
+      const text =
+        `Comment ID: ${comment.id}\n` +
+        `Comment by ${comment.by}:\n` +
+        `${comment.text}\n` +
+        `Parent ID: ${comment.parent}\n`;
+
+      return {
+        content: [{ type: "text", text: text.trim() }],
+      };
     }
 
     case "getComments": {
       const validatedArgs = validateInput(CommentsRequestSchema, args);
       const { storyId, limit = 30 } = validatedArgs;
-      const story = await hnApi.getItem(storyId);
+      try {
+        const story = await hnApi.getItem(storyId);
 
-      if (!story || !story.kids || story.kids.length === 0) {
-        return { result: [] };
-      }
+        if (!story || !story.kids || story.kids.length === 0) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `No comments found for story ID: ${storyId}`,
+              },
+            ],
+          };
+        }
 
-      const commentIds = story.kids.slice(0, limit);
-      const comments = await hnApi.getItems(commentIds);
-
-      return {
-        result: comments
+        const commentIds = story.kids.slice(0, limit);
+        const comments = await hnApi.getItems(commentIds);
+        const formattedComments = comments
           .filter((item) => item && item.type === "comment")
-          .map(formatComment),
-      };
+          .map(formatComment);
+
+        if (formattedComments.length === 0) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `No comments found for story ID: ${storyId}`,
+              },
+            ],
+          };
+        }
+
+        const text =
+          `Comments for Story ID: ${storyId}\n\n` +
+          formattedComments
+            .map(
+              (comment, index) =>
+                `${index + 1}. Comment by ${comment.by} (ID: ${
+                  comment.id
+                }):\n` + `   ${comment.text}\n\n`
+            )
+            .join("");
+
+        return {
+          content: [{ type: "text", text: text.trim() }],
+        };
+      } catch (err) {
+        const error = err as Error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Failed to fetch comments: ${error.message}`
+        );
+      }
     }
 
     case "getCommentTree": {
       const validatedArgs = validateInput(CommentTreeRequestSchema, args);
       const { storyId } = validatedArgs;
+      try {
+        const data = await algoliaApi.getStoryWithComments(storyId);
 
-      // Use Algolia API to get the full comment tree in one request
-      const result = await algoliaApi.getStoryWithComments(storyId);
-      const data = await result.json();
+        if (!data || !data.children || data.children.length === 0) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `No comments found for story ID: ${storyId}`,
+              },
+            ],
+          };
+        }
 
-      if (!data || !data.children) {
-        return { result: [] };
+        const formatCommentTree = (comment: any, depth = 0): string => {
+          const indent = "  ".repeat(depth);
+          let text = `${indent}Comment by ${comment.author} (ID: ${comment.id}):\n`;
+          text += `${indent}${comment.text}\n\n`;
+
+          if (comment.children) {
+            text += comment.children
+              .map((child: any) => formatCommentTree(child, depth + 1))
+              .join("");
+          }
+          return text;
+        };
+
+        const text =
+          `Comment tree for Story ID: ${storyId}\n\n` +
+          data.children
+            .map((comment: any) => formatCommentTree(comment))
+            .join("");
+
+        return {
+          content: [{ type: "text", text: text.trim() }],
+        };
+      } catch (err) {
+        const error = err as Error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Failed to fetch comment tree: ${error.message}`
+        );
       }
-
-      return { result: data.children };
     }
 
     case "getUser": {
       const validatedArgs = validateInput(UserRequestSchema, args);
       const { id } = validatedArgs;
 
-      // Try the official API first
       const user = await hnApi.getUser(id);
 
       if (!user) {
@@ -322,24 +475,42 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         );
       }
 
-      return { result: formatUser(user) };
+      const formattedUser = formatUser(user);
+      const text =
+        `User Profile:\n` +
+        `Username: ${formattedUser.id}\n` +
+        `Karma: ${formattedUser.karma}\n` +
+        `Created: ${new Date(formattedUser.created * 1000).toISOString()}\n` +
+        (formattedUser.about ? `\nAbout:\n${formattedUser.about}\n` : "");
+
+      return {
+        content: [{ type: "text", text: text.trim() }],
+      };
     }
 
     case "getUserSubmissions": {
       const validatedArgs = validateInput(UserRequestSchema, args);
       const { id } = validatedArgs;
 
-      // Use Algolia API to search for user's submissions
       const results = await algoliaApi.search("", {
         tags: `author_${id}`,
         hitsPerPage: 50,
       });
 
+      const hits = results.hits || [];
+      const text =
+        `Submissions by ${id}:\n\n` +
+        hits
+          .map(
+            (hit: any, index: number) =>
+              `${index + 1}. ${hit.title || hit.comment_text}\n` +
+              `   ID: ${hit.objectID}\n` +
+              `   Points: ${hit.points || 0} | Posted: ${hit.created_at}\n\n`
+          )
+          .join("");
+
       return {
-        result: {
-          hits: results.hits || [],
-          nbHits: results.nbHits || 0,
-        },
+        content: [{ type: "text", text: text.trim() }],
       };
     }
 
