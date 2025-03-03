@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -15,12 +16,11 @@ import { formatUser } from "./models/user.js";
 import { validateInput } from "./utils/validation.js";
 import { SearchParamsSchema } from "./schemas/search.js";
 
-
 // Create the MCP server
 const server = new Server(
   {
     name: "hackernews-mcp-server",
-    version: "1.1.7",
+    version: "1.1.9",
   },
   {
     capabilities: {
@@ -36,7 +36,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "search",
         description: "Search for stories and comments on Hacker News",
-        parameters: {
+        inputSchema: {
           type: "object",
           properties: {
             query: { type: "string", description: "The search query" },
@@ -63,7 +63,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "getStory",
         description: "Get a single story by ID",
-        parameters: {
+        inputSchema: {
           type: "object",
           properties: {
             id: { type: "number", description: "The ID of the story" },
@@ -74,7 +74,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "getStoryWithComments",
         description: "Get a story with its comments",
-        parameters: {
+        inputSchema: {
           type: "object",
           properties: {
             id: { type: "number", description: "The ID of the story" },
@@ -86,7 +86,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         name: "getStories",
         description:
           "Get multiple stories by type (top, new, best, ask, show, job)",
-        parameters: {
+        inputSchema: {
           type: "object",
           properties: {
             type: {
@@ -106,7 +106,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "getComment",
         description: "Get a single comment by ID",
-        parameters: {
+        inputSchema: {
           type: "object",
           properties: {
             id: { type: "number", description: "The ID of the comment" },
@@ -117,7 +117,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "getComments",
         description: "Get comments for a story",
-        parameters: {
+        inputSchema: {
           type: "object",
           properties: {
             storyId: { type: "number", description: "The ID of the story" },
@@ -133,7 +133,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "getCommentTree",
         description: "Get a comment tree for a story",
-        parameters: {
+        inputSchema: {
           type: "object",
           properties: {
             storyId: { type: "number", description: "The ID of the story" },
@@ -144,7 +144,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "getUser",
         description: "Get a user profile by ID",
-        parameters: {
+        inputSchema: {
           type: "object",
           properties: {
             id: { type: "string", description: "The ID of the user" },
@@ -154,8 +154,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "getUserSubmissions",
-        description: "Get a user's submissions (stories and comments)",
-        parameters: {
+        description: "Get a user's submissions",
+        inputSchema: {
           type: "object",
           properties: {
             id: { type: "string", description: "The ID of the user" },
@@ -332,12 +332,35 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Connect to the transport
 async function runServer() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("Hacker News MCP Server running on stdio");
+  try {
+    console.error("Initializing server...");
+    const transport = new StdioServerTransport();
+
+    // Connect transport
+    await server.connect(transport);
+    console.error("Server started and connected successfully");
+
+    // Handle process signals
+    process.on("SIGINT", () => {
+      console.error("Received SIGINT, shutting down...");
+      transport.close();
+      process.exit(0);
+    });
+
+    process.on("SIGTERM", () => {
+      console.error("Received SIGTERM, shutting down...");
+      transport.close();
+      process.exit(0);
+    });
+
+    console.error("Hacker News MCP Server running on stdio");
+  } catch (error: unknown) {
+    console.error("Error starting server:", error);
+    process.exit(1);
+  }
 }
 
-runServer().catch((error) => {
+runServer().catch((error: unknown) => {
   console.error("Fatal error in main():", error);
   process.exit(1);
 });
