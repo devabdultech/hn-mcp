@@ -16,10 +16,10 @@ export const StorySchema = z.object({
 export const StoryListSchema = z.array(StorySchema);
 
 export const StoryRequestSchema = z.object({
-  id: z.number(),
+  id: z.number().int().positive(),
 });
 
 export const StoriesRequestSchema = z.object({
   type: z.enum(["top", "new", "best", "ask", "show", "job"]),
-  limit: z.number().min(1).max(100).default(30),
+  limit: z.number().int().min(1).max(100).default(30),
 });

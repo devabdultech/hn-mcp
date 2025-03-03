@@ -15,12 +15,18 @@ import { formatComment } from "./models/comment.js";
 import { formatUser } from "./models/user.js";
 import { validateInput } from "./utils/validation.js";
 import { SearchParamsSchema } from "./schemas/search.js";
+import {
+  CommentRequestSchema,
+  CommentsRequestSchema,
+  CommentTreeRequestSchema,
+  UserRequestSchema,
+} from "./schemas/request.js";
 
 // Create the MCP server
 const server = new Server(
   {
     name: "hackernews-mcp-server",
-    version: "1.1.9",
+    version: "1.1.10",
   },
   {
     capabilities: {
@@ -181,13 +187,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         page,
         hitsPerPage,
       });
+
+      // Format the results to match the expected schema
       return {
-        hits: results.hits,
-        page: results.page,
-        nbHits: results.nbHits,
-        nbPages: results.nbPages,
-        hitsPerPage: results.hitsPerPage,
-        processingTimeMS: results.processingTimeMS,
+        result: {
+          hits: results.hits || [],
+          page: results.page || 0,
+          nbHits: results.nbHits || 0,
+          nbPages: results.nbPages || 0,
+          hitsPerPage: results.hitsPerPage || 20,
+          processingTimeMS: results.processingTimeMS || 0,
+        },
       };
     }
 
@@ -200,7 +210,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           `Story with ID ${id} not found`
         );
       }
-      return formatStory(item);
+      return { result: formatStory(item) };
     }
 
     case "getStoryWithComments": {
@@ -212,7 +222,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           `Story with ID ${id} not found`
         );
       }
-      return result;
+      return { result };
     }
 
     case "getStories": {
@@ -244,13 +254,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       const items = await hnApi.getItems(storyIds);
-      return items
-        .filter((item) => item && item.type === "story")
-        .map(formatStory);
+      return {
+        result: items
+          .filter((item) => item && item.type === "story")
+          .map(formatStory),
+      };
     }
 
     case "getComment": {
-      const { id } = args as { id: number };
+      const validatedArgs = validateInput(CommentRequestSchema, args);
+      const { id } = validatedArgs;
       const item = await hnApi.getItem(id);
       if (!item || item.type !== "comment") {
         throw new McpError(
@@ -258,44 +271,46 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           `Comment with ID ${id} not found`
         );
       }
-      return formatComment(item);
+      return { result: formatComment(item) };
     }
 
     case "getComments": {
-      const { storyId, limit = 30 } = args as {
-        storyId: number;
-        limit?: number;
-      };
+      const validatedArgs = validateInput(CommentsRequestSchema, args);
+      const { storyId, limit = 30 } = validatedArgs;
       const story = await hnApi.getItem(storyId);
 
       if (!story || !story.kids || story.kids.length === 0) {
-        return [];
+        return { result: [] };
       }
 
       const commentIds = story.kids.slice(0, limit);
       const comments = await hnApi.getItems(commentIds);
 
-      return comments
-        .filter((item) => item && item.type === "comment")
-        .map(formatComment);
+      return {
+        result: comments
+          .filter((item) => item && item.type === "comment")
+          .map(formatComment),
+      };
     }
 
     case "getCommentTree": {
-      const { storyId } = args as { storyId: number };
+      const validatedArgs = validateInput(CommentTreeRequestSchema, args);
+      const { storyId } = validatedArgs;
 
       // Use Algolia API to get the full comment tree in one request
       const result = await algoliaApi.getStoryWithComments(storyId);
       const data = await result.json();
 
       if (!data || !data.children) {
-        return [];
+        return { result: [] };
       }
 
-      return data.children;
+      return { result: data.children };
     }
 
     case "getUser": {
-      const { id } = args as { id: string };
+      const validatedArgs = validateInput(UserRequestSchema, args);
+      const { id } = validatedArgs;
 
       // Try the official API first
       const user = await hnApi.getUser(id);
@@ -307,11 +322,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         );
       }
 
-      return formatUser(user);
+      return { result: formatUser(user) };
     }
 
     case "getUserSubmissions": {
-      const { id } = args as { id: string };
+      const validatedArgs = validateInput(UserRequestSchema, args);
+      const { id } = validatedArgs;
 
       // Use Algolia API to search for user's submissions
       const results = await algoliaApi.search("", {
@@ -320,8 +336,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       });
 
       return {
-        hits: results.hits,
-        nbHits: results.nbHits,
+        result: {
+          hits: results.hits || [],
+          nbHits: results.nbHits || 0,
+        },
       };
     }
 
