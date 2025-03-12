@@ -2,6 +2,10 @@
 
 Official Hacker News MCP Server - Adds powerful Hacker News integration to Cursor, Claude, and any other LLM clients. Access stories, comments, user profiles, and search functionality through the Model Context Protocol.
 
+<a href="https://glama.ai/mcp/servers/73uji99mwg">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/73uji99mwg/badge" alt="Hacker News Server MCP server" />
+</a>
+
 ## Features
 
 - Search stories and comments using Algolia's HN Search API
