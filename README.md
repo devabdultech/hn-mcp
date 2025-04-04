@@ -1,5 +1,6 @@
 # Hacker News MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@devabdultech/hn-mcp)](https://smithery.ai/server/@devabdultech/hn-mcp)
 Official Hacker News MCP Server - Adds powerful Hacker News integration to Cursor, Claude, and any other LLM clients. Access stories, comments, user profiles, and search functionality through the Model Context Protocol.
 
 <a href="https://glama.ai/mcp/servers/73uji99mwg">
@@ -30,6 +31,14 @@ Add this to your `claude_desktop_config.json`:
     }
   }
 }
+```
+
+### Installing via Smithery
+
+To install Hacker News MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@devabdultech/hn-mcp):
+
+```bash
+npx -y @smithery/cli install @devabdultech/hn-mcp --client claude
 ```
 
 ## Tools
