@@ -1,6 +1,6 @@
 # Hacker News MCP Server
 
-[![smithery badge](https://smithery.ai/badge/@devabdultech/hn-mcp)](https://smithery.ai/server/@devabdultech/hn-mcp)
+[![LightNow capabilities](https://lightnow.ai/badge/io.github.devabdultech/hn-mcp)](https://lightnow.ai/servers/io.github.devabdultech/hn-mcp)
 Official Hacker News MCP Server - Adds powerful Hacker News integration to Cursor, Claude, and any other LLM clients. Access stories, comments, user profiles, and search functionality through the Model Context Protocol.
 
 <a href="https://glama.ai/mcp/servers/73uji99mwg">
